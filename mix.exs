@@ -58,6 +58,8 @@ defmodule Discountex.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"}
+      # Future: Add {:httpoison, "~> 2.0"} for real API calls
+      # {:req, "~> 0.4"} # Alternative HTTP client
     ]
   end
 

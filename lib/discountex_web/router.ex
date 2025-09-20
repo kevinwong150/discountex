@@ -18,6 +18,7 @@ defmodule DiscountexWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/products", ProductsLive
   end
 
   # Other scopes may use custom stacks.

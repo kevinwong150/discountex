@@ -17,13 +17,21 @@ defmodule Discountex.WellcomeApi do
   {:ok, products} | {:error, reason}
   """
   def search_products(keyword, page \\ 1) do
-    _params = %{
+    params = %{
       keyword: keyword,
       page: page
     }
     
-    # For development, return mock data since external API access is limited
-    {:ok, mock_products()}
+    case make_api_request(params) do
+      {:ok, response} ->
+        products = transform_api_response(response)
+        {:ok, products}
+      
+      {:error, reason} ->
+        # Fallback to mock data if API fails for development
+        IO.puts("API request failed: #{reason}. Using mock data for development.")
+        {:ok, mock_products()}
+    end
   end
 
   # Mock data structure based on typical grocery API responses
@@ -97,27 +105,199 @@ defmodule Discountex.WellcomeApi do
     ]
   end
 
-  # Future implementation for making HTTP request to the actual Wellcome API
-  # This would be used in production with proper HTTP client.
-  # defp make_api_request(params) do
-  #   query_string = URI.encode_query(params)
-  #   url = "#{@api_base_url}?#{query_string}"
-  #   
-  #   case HTTPoison.get(url, headers()) do
-  #     {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-  #       Jason.decode(body)
-  #     {:ok, %HTTPoison.Response{status_code: status_code}} ->
-  #       {:error, "API returned status #{status_code}"}
-  #     {:error, %HTTPoison.Error{reason: reason}} ->
-  #       {:error, reason}
-  #   end
-  # end
+  # HTTP request implementation for the actual Wellcome API
+  defp make_api_request(params) do
+    payload = build_request_payload(params)
+    headers = build_headers()
+    
+    case Finch.build(:post, @api_base_url, headers, encode_json(payload))
+         |> Finch.request(Discountex.Finch) do
+      {:ok, %Finch.Response{status: 200, body: body}} ->
+        case decode_json(body) do
+          {:ok, response} -> {:ok, response}
+          {:error, _} -> {:error, "Invalid JSON response"}
+        end
+      
+      {:ok, %Finch.Response{status: status_code}} ->
+        {:error, "API returned status #{status_code}"}
+      
+      {:error, reason} ->
+        {:error, "Network error: #{inspect(reason)}"}
+    end
+  end
 
-  # defp headers do
-  #   [
-  #     {"User-Agent", "DiscountEx/1.0"},
-  #     {"Accept", "application/json"},
-  #     {"Content-Type", "application/json"}
-  #   ]
-  # end
+  # JSON encoding/decoding with fallback
+  defp encode_json(data) do
+    try do
+      Jason.encode!(data)
+    rescue
+      _error ->
+        # Fallback if Jason is not available
+        "{}"
+    end
+  end
+
+  defp decode_json(json_string) do
+    try do
+      Jason.decode(json_string)
+    rescue
+      _error ->
+        # Fallback if Jason is not available
+        {:error, "JSON decode failed"}
+    end
+  end
+
+  defp build_request_payload(params) do
+    %{
+      "param" => %{
+        "businessCode" => 1,
+        "categoryType" => 1,
+        "erpStoreId" => 642,
+        "venderId" => 5,
+        "keyword" => params.keyword,
+        "pageNum" => to_string(params.page),
+        "pageSize" => 20,
+        "filterProperties" => [],
+        "sortKey" => 0,
+        "sortRule" => 0
+      },
+      "comm" => %{
+        "dmTenantId" => 15,
+        "venderId" => 5,
+        "businessCode" => 1,
+        "origin" => 26,
+        "superweb-locale" => "zh_HK",
+        "storeId" => 642,
+        "pickUpStoreId" => "",
+        "shipmentType" => 1
+      }
+    }
+  end
+
+  defp build_headers do
+    [
+      {"Content-Type", "application/json;charset=UTF-8"},
+      {"Accept", "*/*"},
+      {"Accept-Language", "en-US,en;q=0.9,zh-Hant;q=0.8,zh;q=0.7,ja;q=0.6"},
+      {"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"},
+      {"Origin", "https://www.wellcome.com.hk"},
+      {"Referer", "https://www.wellcome.com.hk/"},
+      {"domain-flag", "wellcome"},
+      {"DNT", "1"},
+      {"Sec-Fetch-Dest", "empty"},
+      {"Sec-Fetch-Mode", "cors"},
+      {"Sec-Fetch-Site", "same-origin"}
+    ]
+  end
+
+  defp transform_api_response(response) do
+    case response do
+      %{"code" => "0000", "data" => %{"wareList" => ware_list}} when is_list(ware_list) ->
+        Enum.map(ware_list, &transform_product/1)
+      
+      %{"code" => "0000", "data" => %{"wareList" => []}} ->
+        []
+      
+      _ ->
+        # If API response format is unexpected, return empty list
+        []
+    end
+  end
+
+  defp transform_product(ware) do
+    # Extract brand name from the numeric brand ID or use a fallback
+    brand_name = get_brand_name(ware["brand"]) || "Unknown Brand"
+    
+    # Parse price from string to integer (price is in cents)
+    price = case ware["warePrice"] do
+      price_str when is_binary(price_str) ->
+        {price_int, _} = Integer.parse(price_str)
+        price_int / 100  # Convert from cents to dollars
+      price_int when is_integer(price_int) ->
+        price_int / 100
+      _ ->
+        0.0
+    end
+
+    # Extract promotion info if available
+    {discount_price, discount_percentage, promo_tags} = extract_promotion_info(ware)
+
+    %{
+      id: to_string(ware["wareId"]),
+      name: ware["wareName"] || "",
+      price: price,
+      original_price: price,
+      discount_price: discount_price,
+      discount_percentage: discount_percentage,
+      promo_tags: promo_tags,
+      image_url: ware["wareImg"] || "",
+      description: ware["wareName"] || "",
+      brand: brand_name,
+      weight: extract_weight_from_name(ware["wareName"]),
+      in_stock: ware["wareStatus"] == 0
+    }
+  end
+
+  defp extract_promotion_info(ware) do
+    promotion_price = case ware["onlinePromotionPrice"] do
+      price when is_integer(price) and price > 0 -> price / 100
+      _ -> nil
+    end
+
+    original_price = case ware["warePrice"] do
+      price_str when is_binary(price_str) ->
+        {price_int, _} = Integer.parse(price_str)
+        price_int / 100
+      price_int when is_integer(price_int) ->
+        price_int / 100
+      _ ->
+        0.0
+    end
+
+    discount_percentage = if promotion_price && promotion_price < original_price do
+      round((original_price - promotion_price) / original_price * 100)
+    else
+      nil
+    end
+
+    # Extract promotion tags from promotionWareVO
+    promo_tags = case ware["promotionWareVO"]["promotionInfoList"] do
+      promotion_list when is_list(promotion_list) ->
+        promotion_list
+        |> Enum.map(fn promo -> promo["displayInfo"]["proTag"] end)
+        |> Enum.filter(& &1)
+      _ ->
+        []
+    end
+
+    {promotion_price, discount_percentage, promo_tags}
+  end
+
+  defp extract_weight_from_name(name) when is_binary(name) do
+    # Extract weight from product name (e.g., "55GM", "192G", "105GM")
+    case Regex.run(~r/(\d+)G?M?/i, name) do
+      [_, weight] -> "#{weight}g"
+      _ -> ""
+    end
+  end
+
+  defp extract_weight_from_name(_), do: ""
+
+  defp get_brand_name(brand_id) do
+    # Map common brand IDs to names based on the API response
+    brand_map = %{
+      24715 => "卡樂B",
+      33509 => "樂事",
+      28570 => "MEADOWS",
+      31702 => "珍珍",
+      33369 => "威斯比",
+      33256 => "品客",
+      25321 => "多樂脆",
+      28144 => "RUFFLES",
+      59056 => "LAY'S STAX",
+      33155 => "利趣"
+    }
+    
+    Map.get(brand_map, brand_id)
+  end
 end

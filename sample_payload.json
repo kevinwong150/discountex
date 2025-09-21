@@ -1,0 +1,24 @@
+{
+    "param": {
+        "businessCode": 1,
+        "categoryType": 1,
+        "erpStoreId": 642,
+        "venderId": 5,
+        "keyword": "薯片",
+        "pageNum": "1",
+        "pageSize": 20,
+        "filterProperties": [],
+        "sortKey": 0,
+        "sortRule": 0
+    },
+    "comm": {
+        "dmTenantId": 15,
+        "venderId": 5,
+        "businessCode": 1,
+        "origin": 26,
+        "superweb-locale": "zh_HK",
+        "storeId": 642,
+        "pickUpStoreId": "",
+        "shipmentType": 1
+    }
+}

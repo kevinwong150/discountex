@@ -1,0 +1,20 @@
+POST /api/item/wareSearch HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9,zh-Hant;q=0.8,zh;q=0.7,ja;q=0.6
+Connection: keep-alive
+Content-Length: 312
+Content-Type: application/json;charset=UTF-8
+Cookie: ec-pixel-config=JTdCJTIyc2hvcElkJTIyJTNBbnVsbCUyQyUyMnNob3BQbGF0Zm9ybSUyMiUzQSUyMm93bnNpdGUlMjIlMkMlMjJ0ZWFtJTIyJTNBJTIyJUU2JTgzJUEwJUU1JUJBJUI3JTIwV2VsbGNvbWUlMjIlMkMlMjJlY2lkJTIyJTNBJTIyZGFiOTJkZmYtYTAwYi00NDg1LWE0NzgtMjFhNmQzOGJhNzg2JTIyJTJDJTIyZW5hYmxlUGl4ZWwlMjIlM0F0cnVlJTJDJTIydHhMaW5rVHJhY2tpbmdMaWZldGltZSUyMiUzQTMwJTdE; ec-token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc0Fub255bW91cyI6InRydWUiLCJyb2xlIjowLCJ0Ijoi5oOg5bq3IFdlbGxjb21lIiwiZCI6Imt0NkN5NnBoNUw2dWRLY1lDRVhSbmlqLytIN2pEbHl5NnkzTlJMQTczaVE9IiwiZSI6Imt0NkN5NnBoNUw2dWRLY1lDRVhSbmtPWEp0ak1jS2toblUvWjdHT2E2NXZkVVlsMEo1Z1JHU2U4bmM4ZHhEL2NUL1E1NW4ydEJpc085dEFjMVJ6bUhnPT0iLCJpc0FkbWluIjoiZmFsc2UiLCJzc28iOiJmYWxzZSJ9.Yt4-Zh2dPgn3SEBYdVSVLpzZeXR-YONjvM3lV3n3EOQ; __ocutm=%7B%22utm_source%22%3A%22google%22%2C%22utm_medium%22%3A%22organic%22%7D; superweb-locale=zh_HK; acw_tc=0a03e53617584151558668053e0a648ec8ba35a150a0343ea6d40bddfbf772; __ocmm=-180357582; __ocssid=c6rlukmc-mfsyzepx.1758415157061.1758415167120
+DNT: 1
+Host: www.wellcome.com.hk
+Origin: https://www.wellcome.com.hk
+Referer: https://www.wellcome.com.hk/
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-origin
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36
+domain-flag: wellcome
+sec-ch-ua: "Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
